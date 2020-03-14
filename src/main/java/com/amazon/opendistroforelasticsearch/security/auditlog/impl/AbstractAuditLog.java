@@ -667,8 +667,8 @@ public abstract class AbstractAuditLog implements AuditLog {
             return false;
         }
 
-        final Collection<String>ignoredAuditUsers = auditConfigFilter.getIgnoredAuditUsers();
-        if (!ignoredAuditUsers.isEmpty() && WildcardMatcher.matchAny(ignoredAuditUsers, effectiveUser)) {
+        final WildcardMatcher ignoredAuditUsers = auditConfigFilter.getIgnoredAuditUsers();
+        if (ignoredAuditUsers.test(effectiveUser)) {
 
             if(log.isTraceEnabled()) {
                 log.trace("Skipped audit log message because of user {} is ignored", effectiveUser);
@@ -677,9 +677,8 @@ public abstract class AbstractAuditLog implements AuditLog {
             return false;
         }
 
-        final Collection<String> ignoredAuditRequests = auditConfigFilter.getIgnoredAuditRequests();
-        if (request != null && !ignoredAuditRequests.isEmpty()
-                && (WildcardMatcher.matchAny(ignoredAuditRequests, action) || WildcardMatcher.matchAny(ignoredAuditRequests, request.getClass().getSimpleName()))) {
+        final WildcardMatcher ignoredAuditRequests = auditConfigFilter.getIgnoredAuditRequests();
+        if (request != null && (ignoredAuditRequests.test(action) || ignoredAuditRequests.test(request.getClass().getSimpleName()))) {
 
             if(log.isTraceEnabled()) {
                 log.trace("Skipped audit log message because request {} is ignored", action+"#"+request.getClass().getSimpleName());
@@ -720,9 +719,8 @@ public abstract class AbstractAuditLog implements AuditLog {
 
         if(category == AuditCategory.COMPLIANCE_DOC_READ || category == AuditCategory.COMPLIANCE_INTERNAL_CONFIG_READ) {
 
-            final Collection<String> ignoredComplianceUsersForRead = auditConfigFilter.getIgnoredComplianceUsersForRead();
-            if (!ignoredComplianceUsersForRead.isEmpty() && effectiveUser != null
-                    && WildcardMatcher.matchAny(ignoredComplianceUsersForRead, effectiveUser)) {
+            final WildcardMatcher ignoredComplianceUsersForRead = auditConfigFilter.getIgnoredComplianceUsersForRead();
+            if (effectiveUser != null && ignoredComplianceUsersForRead.test(effectiveUser)) {
 
                 if(log.isTraceEnabled()) {
                     log.trace("Skipped compliance log message because of user {} is ignored", effectiveUser);
@@ -732,9 +730,8 @@ public abstract class AbstractAuditLog implements AuditLog {
         }
 
         if(category == AuditCategory.COMPLIANCE_DOC_WRITE || category == AuditCategory.COMPLIANCE_INTERNAL_CONFIG_WRITE) {
-            final Collection<String> ignoredComplianceUsersForWrite = auditConfigFilter.getIgnoredComplianceUsersForWrite();
-            if (!ignoredComplianceUsersForWrite.isEmpty() && effectiveUser != null
-                    && WildcardMatcher.matchAny(ignoredComplianceUsersForWrite, effectiveUser)) {
+            final WildcardMatcher ignoredComplianceUsersForWrite = auditConfigFilter.getIgnoredComplianceUsersForWrite();
+            if (effectiveUser != null && ignoredComplianceUsersForWrite.test(effectiveUser)) {
 
                 if(log.isTraceEnabled()) {
                     log.trace("Skipped compliance log message because of user {} is ignored", effectiveUser);
@@ -763,8 +760,8 @@ public abstract class AbstractAuditLog implements AuditLog {
 
         }
 
-        final Collection<String> ignoredAuditUsers = auditConfigFilter.getIgnoredAuditUsers();
-        if (!ignoredAuditUsers.isEmpty() && WildcardMatcher.matchAny(ignoredAuditUsers, effectiveUser)) {
+        final WildcardMatcher ignoredAuditUsers = auditConfigFilter.getIgnoredAuditUsers();
+        if (ignoredAuditUsers.test(effectiveUser)) {
 
             if(log.isTraceEnabled()) {
                 log.trace("Skipped audit log message because of user {} is ignored", effectiveUser);
@@ -773,9 +770,8 @@ public abstract class AbstractAuditLog implements AuditLog {
             return false;
         }
 
-        final Collection<String> ignoredAuditRequests = auditConfigFilter.getIgnoredAuditRequests();
-        if (request != null && !ignoredAuditRequests.isEmpty()
-                && (WildcardMatcher.matchAny(ignoredAuditRequests, request.path()))) {
+        final WildcardMatcher ignoredAuditRequests = auditConfigFilter.getIgnoredAuditRequests();
+        if (request != null && ignoredAuditRequests.test(request.path())) {
 
             if(log.isTraceEnabled()) {
                 log.trace("Skipped audit log message because request {} is ignored", request.path());
