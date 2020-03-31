@@ -23,7 +23,7 @@ jobs:
         run: mvn checkstyle:checkstyle
 
       - name: Test
-        run: mvn test
+        run: mvn test -Dtest=HttpClientTest
 
       - name: Coverage
         uses: codecov/codecov-action@v1

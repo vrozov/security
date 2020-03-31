@@ -43,6 +43,8 @@ public class HttpClientTest extends SingleClusterTest {
 
         Thread.sleep(1000);
 
+        log.warn("host {}, port {}", clusterInfo.httpHost, clusterInfo.httpPort);
+
         try(final HttpClient httpClient = HttpClient.builder(clusterInfo.httpHost+":"+clusterInfo.httpPort)
                 .setBasicCredentials("admin", "admin").build()) {
             Assert.assertTrue(httpClient.index("{\"a\":5}", "index", "type", false));
@@ -88,6 +90,8 @@ public class HttpClientTest extends SingleClusterTest {
         setup(Settings.EMPTY, new DynamicSecurityConfig(), settings);
 
         Thread.sleep(1000);
+
+        log.warn("host {}, port {}", clusterInfo.httpHost, clusterInfo.httpPort);
 
         try(final HttpClient httpClient = HttpClient.builder(clusterInfo.httpHost+":"+clusterInfo.httpPort)
                 .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore.jks","changeit"), false)
