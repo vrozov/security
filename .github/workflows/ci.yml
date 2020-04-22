@@ -34,7 +34,7 @@ jobs:
       run: mvn -B checkstyle:checkstyle
 
     - name: Test
-      run: OPENDISTRO_SECURITY_TEST_OPENSSL_OPT=true mvn -B test
+      run: OPENDISTRO_SECURITY_TEST_OPENSSL_OPT=true mvn -B test -Dtest=OpenSSLTest#testNodeClientSSL
 
     - name: Coverage
       uses: codecov/codecov-action@v1
