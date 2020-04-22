@@ -239,15 +239,15 @@ public final class ClusterHelper {
         FileUtils.deleteDirectory(new File("data/"+clustername));
     }
 
-    private static void closeNode(Node node) {
+    private void closeNode(Node node) {
         try {
-            LoggerContext context = (LoggerContext) LogManager.getContext(false);
-            Configurator.shutdown(context);
             node.close();
             Thread.sleep(250);
-        } catch (Throwable e) {
-            //ignore
+        } catch (Throwable t) {
+            log.warn("Failed to close node {}", node, t);
         }
+        LoggerContext context = (LoggerContext) LogManager.getContext(false);
+        Configurator.shutdown(context);
     }
 
 
