@@ -103,6 +103,7 @@ public class RestHelper {
 		try {
 			httpClient = getHTTPClient();
 			response = httpClient.execute(new HttpGet(getHttpServerUri() + "/" + request));
+			log.info("response {}", response);
 
 			if (response.getStatusLine().getStatusCode() >= 300) {
 				throw new Exception("Statuscode " + response.getStatusLine().getStatusCode());

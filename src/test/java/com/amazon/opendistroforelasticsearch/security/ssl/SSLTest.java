@@ -613,7 +613,7 @@ public class SSLTest extends SingleClusterTest {
                 .put("node.data", false)
                 .put("node.master", false)
                 .put("node.ingest", false)
-                .put("discovery.initial_state_timeout","8s")
+                .put("discovery.initial_state_timeout","100s")
                 .putList("discovery.zen.ping.unicast.hosts", clusterInfo.nodeHost+":"+clusterInfo.nodePort)
                 .put(settings)// -----
                 .build();
@@ -628,6 +628,9 @@ public class SSLTest extends SingleClusterTest {
             Assert.assertFalse(rh.executeSimpleRequest("_nodes/stats?pretty").contains("\"rx_count\" : 0"));
             Assert.assertFalse(rh.executeSimpleRequest("_nodes/stats?pretty").contains("\"rx_size_in_bytes\" : 0"));
             Assert.assertFalse(rh.executeSimpleRequest("_nodes/stats?pretty").contains("\"tx_count\" : 0"));
+        } catch (Exception e) {
+            log.error("testNodeClientSSL", e);
+            Assert.fail(e.getMessage());
         }
     }
 
