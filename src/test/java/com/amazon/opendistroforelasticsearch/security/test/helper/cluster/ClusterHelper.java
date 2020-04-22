@@ -146,10 +146,10 @@ public final class ClusterHelper {
         for (int i = 0; i < internalMasterNodeSettings.size(); i++) {
             NodeSettings setting = internalMasterNodeSettings.get(i);
             int nodeNum = nodeNumCounter--;
-            PluginAwareNode node = new PluginAwareNode(setting.masterNode,
-                    getMinimumNonSecurityNodeSettingsBuilder(nodeNum, setting.masterNode, setting.dataNode, internalNodeSettings.size(), tcpMasterPortsOnly, tcpPortsAllIt.next(), httpPortsIt.next())
+            PluginAwareNode node = new PluginAwareNode(setting.getMaster(),
+                    getMinimumNonSecurityNodeSettingsBuilder(nodeNum, setting.getMaster(), setting.getDataNode(), internalNodeSettings.size(), tcpMasterPortsOnly, tcpPortsAllIt.next(), httpPortsIt.next())
                             .put(nodeSettingsSupplier == null ? Settings.Builder.EMPTY_SETTINGS : nodeSettingsSupplier.get(nodeNum)).build(), setting.getPlugins());
-            System.out.println(node.settings());
+            log.error("master settings {}, node {}, node settings {}", setting, node, node.settings());
 
             new Thread(new Runnable() {
 
@@ -157,6 +157,7 @@ public final class ClusterHelper {
                 public void run() {
                     try {
                         node.start();
+                        log.error("node {} started", node);
                         latch.countDown();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -172,8 +173,8 @@ public final class ClusterHelper {
         for (int i = 0; i < internalNonMasterNodeSettings.size(); i++) {
             NodeSettings setting = internalNonMasterNodeSettings.get(i);
             int nodeNum = nodeNumCounter--;
-            PluginAwareNode node = new PluginAwareNode(setting.masterNode,
-                    getMinimumNonSecurityNodeSettingsBuilder(nodeNum, setting.masterNode, setting.dataNode, internalNodeSettings.size(), tcpMasterPortsOnly, tcpPortsAllIt.next(), httpPortsIt.next())
+            PluginAwareNode node = new PluginAwareNode(setting.getMaster(),
+                    getMinimumNonSecurityNodeSettingsBuilder(nodeNum, setting.getMaster(), setting.getDataNode(), internalNodeSettings.size(), tcpMasterPortsOnly, tcpPortsAllIt.next(), httpPortsIt.next())
                             .put(nodeSettingsSupplier == null ? Settings.Builder.EMPTY_SETTINGS : nodeSettingsSupplier.get(nodeNum)).build(), setting.getPlugins());
             System.out.println(node.settings());
 

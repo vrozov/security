@@ -99,12 +99,11 @@ public enum ClusterConfiguration {
     }
 	
 	public static class NodeSettings {
-		public boolean masterNode;
-		public boolean dataNode;
-		public List<Class<? extends Plugin>> plugins = Lists.newArrayList(Netty4Plugin.class, OpenDistroSecurityPlugin.class, MatrixAggregationPlugin.class, MustachePlugin.class, ParentJoinPlugin.class, PercolatorPlugin.class, ReindexPlugin.class);
+		private boolean masterNode;
+		private boolean dataNode;
+		private List<Class<? extends Plugin>> plugins = Lists.newArrayList(Netty4Plugin.class, OpenDistroSecurityPlugin.class, MatrixAggregationPlugin.class, MustachePlugin.class, ParentJoinPlugin.class, PercolatorPlugin.class, ReindexPlugin.class);
 		
 		public NodeSettings(boolean masterNode, boolean dataNode) {
-			super();
 			this.masterNode = masterNode;
 			this.dataNode = dataNode;
 		}
@@ -113,9 +112,21 @@ public enum ClusterConfiguration {
             this(masterNode, dataNode);
             this.plugins.addAll(additionalPlugins);
         }
+
+        public boolean getMaster() {
+			return masterNode;
+		}
+
+		public boolean getDataNode() {
+			return dataNode;
+		}
 		
 		public Class<? extends Plugin>[] getPlugins() {
 		    return plugins.toArray(new Class[0] );
+		}
+
+		public String toString() {
+			return masterNode ? "master" : "not master";
 		}
 	}
 }
