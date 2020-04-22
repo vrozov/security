@@ -149,7 +149,7 @@ public final class ClusterHelper {
             PluginAwareNode node = new PluginAwareNode(setting.getMaster(),
                     getMinimumNonSecurityNodeSettingsBuilder(nodeNum, setting.getMaster(), setting.getDataNode(), internalNodeSettings.size(), tcpMasterPortsOnly, tcpPortsAllIt.next(), httpPortsIt.next())
                             .put(nodeSettingsSupplier == null ? Settings.Builder.EMPTY_SETTINGS : nodeSettingsSupplier.get(nodeNum)).build(), setting.getPlugins());
-            log.error("master settings {}, node {}, node settings {}", setting, node, node.settings());
+            log.debug("master settings {}, node {}, node settings {}", setting, node, node.settings());
 
             new Thread(new Runnable() {
 
@@ -157,7 +157,7 @@ public final class ClusterHelper {
                 public void run() {
                     try {
                         node.start();
-                        log.error("node {} started", node);
+                        log.debug("node {} started", node);
                         latch.countDown();
                     } catch (Exception e) {
                         e.printStackTrace();
