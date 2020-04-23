@@ -132,7 +132,7 @@ public final class ClusterHelper {
         freePorts.stream().skip(internalNodeSettings.size()).limit(internalNodeSettings.size()).forEach(el->httpPorts.add(el));
         final Iterator<Integer> httpPortsIt = httpPorts.iterator();
 
-        System.out.println("tcpMasterPorts: "+tcpMasterPortsOnly+"/tcpAllPorts: "+tcpAllPorts+"/httpPorts: "+httpPorts+" for ("+min+"-"+max+") fork "+forkNumber);
+        log.info("tcpMasterPorts: {}/tcpAllPorts: {}/httpPorts: {} for ({}-{}) fork {}", tcpMasterPortsOnly, tcpAllPorts, httpPorts, min, max, forkNumber);
 
         final CountDownLatch latch = new CountDownLatch(internalNodeSettings.size());
 

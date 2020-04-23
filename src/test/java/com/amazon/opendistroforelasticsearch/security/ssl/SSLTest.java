@@ -598,16 +598,16 @@ public class SSLTest extends SingleClusterTest {
 
         Logger cas = (Logger)LogManager.getLogger(org.elasticsearch.cluster.service.ClusterApplierService.class);
         cas.setLevel(Level.TRACE);
-        cas.debug("{} level {}, class {}", cas.getName(), cas.getLevel());
+        cas.debug("{} level {}", cas.getName(), cas.getLevel());
         Logger es = (Logger)LogManager.getLogger(org.elasticsearch.node.Node.class);
         es.setLevel(Level.DEBUG);
-        es.debug("{} level {}, class {}", cas.getName(), cas.getLevel());
+        es.debug("{} level {}", es.getName(), es.getLevel());
         Logger crd = (Logger)LogManager.getLogger(org.elasticsearch.cluster.coordination.Coordinator.class);
         crd.setLevel(Level.DEBUG);
-        crd.debug("{} level {}, class {}", cas.getName(), cas.getLevel());
+        crd.debug("{} level {}", crd.getName(), crd.getLevel());
         Logger helper = (Logger)LogManager.getLogger(com.amazon.opendistroforelasticsearch.security.test.helper.cluster.ClusterHelper.class);
         helper.setLevel(Level.DEBUG);
-        helper.debug("{} level {}, class {}", cas.getName(), cas.getLevel());
+        helper.debug("{} level {}", helper.getName(), helper.getLevel());
 
         final Settings settings = Settings.builder().put("opendistro_security.ssl.transport.enabled", true)
                 .put(ConfigConstants.OPENDISTRO_SECURITY_SSL_ONLY, true)
@@ -621,7 +621,12 @@ public class SSLTest extends SingleClusterTest {
                 .build();
 
         setupSslOnlyMode(settings);
-        
+
+        cas.setLevel(Level.TRACE);
+        es.setLevel(Level.DEBUG);
+        crd.setLevel(Level.DEBUG);
+        helper.setLevel(Level.DEBUG);
+
         RestHelper rh = nonSslRestHelper();
 
         final Settings tcSettings = Settings.builder().put("cluster.name", clusterInfo.clustername).put("path.home", ".")
