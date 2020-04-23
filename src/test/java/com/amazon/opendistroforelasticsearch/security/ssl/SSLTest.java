@@ -36,6 +36,9 @@ import javax.net.ssl.TrustManagerFactory;
 
 
 import org.apache.http.NoHttpResponseException;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 import org.apache.lucene.util.Constants;
 import org.elasticsearch.ElasticsearchSecurityException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -593,6 +596,19 @@ public class SSLTest extends SingleClusterTest {
     @Test
     public void testNodeClientSSL() throws Exception {
 
+        Logger cas = (Logger)LogManager.getLogger(org.elasticsearch.cluster.service.ClusterApplierService.class);
+        cas.setLevel(Level.TRACE);
+        cas.debug("{} level {}, class {}", cas.getName(), cas.getLevel());
+        Logger es = (Logger)LogManager.getLogger(org.elasticsearch.node.Node.class);
+        es.setLevel(Level.DEBUG);
+        es.debug("{} level {}, class {}", cas.getName(), cas.getLevel());
+        Logger crd = (Logger)LogManager.getLogger(org.elasticsearch.cluster.coordination.Coordinator.class);
+        crd.setLevel(Level.DEBUG);
+        crd.debug("{} level {}, class {}", cas.getName(), cas.getLevel());
+        Logger helper = (Logger)LogManager.getLogger(com.amazon.opendistroforelasticsearch.security.test.helper.cluster.ClusterHelper.class);
+        helper.setLevel(Level.DEBUG);
+        helper.debug("{} level {}, class {}", cas.getName(), cas.getLevel());
+
         final Settings settings = Settings.builder().put("opendistro_security.ssl.transport.enabled", true)
                 .put(ConfigConstants.OPENDISTRO_SECURITY_SSL_ONLY, true)
                 .put(SSLConfigConstants.OPENDISTRO_SECURITY_SSL_HTTP_ENABLE_OPENSSL_IF_AVAILABLE, allowOpenSSL)
@@ -631,6 +647,11 @@ public class SSLTest extends SingleClusterTest {
         } catch (Exception e) {
             log.error("testNodeClientSSL", e);
             Assert.fail(e.getMessage());
+        } finally {
+            cas.setLevel(Level.WARN);
+            es.setLevel(Level.WARN);
+            crd.setLevel(Level.WARN);
+            helper.setLevel(Level.WARN);
         }
     }
 
