@@ -246,8 +246,6 @@ public final class ClusterHelper {
         } catch (Throwable t) {
             log.warn("Failed to close node {}", node, t);
         }
-        LoggerContext context = (LoggerContext) LogManager.getContext(false);
-        Configurator.shutdown(context);
     }
 
 
