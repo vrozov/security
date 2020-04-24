@@ -621,7 +621,8 @@ public class SSLTest extends SingleClusterTest {
                 .put(settings)// -----
                 .build();
 
-        try (Node node = new PluginAwareNode(false, tcSettings, Netty4Plugin.class, OpenDistroSecurityPlugin.class).start()) {
+        try (Node node = new PluginAwareNode(false, tcSettings, Netty4Plugin.class, OpenDistroSecurityPlugin.class)) {
+            node.start();
             ClusterHealthResponse res = node.client().admin().cluster().health(new ClusterHealthRequest().waitForNodes("4").timeout(TimeValue.timeValueSeconds(15))).actionGet();
             Assert.assertFalse(res.isTimedOut());
             Assert.assertEquals(4, res.getNumberOfNodes());
@@ -841,7 +842,8 @@ public class SSLTest extends SingleClusterTest {
                 .put(settings)// -----
                 .build();
 
-        try (Node node = new PluginAwareNode(false, tcSettings, Netty4Plugin.class, OpenDistroSecurityPlugin.class).start()) {
+        try (Node node = new PluginAwareNode(false, tcSettings, Netty4Plugin.class, OpenDistroSecurityPlugin.class)) {
+            node.start();
             ClusterHealthResponse res = node.client().admin().cluster().health(new ClusterHealthRequest().waitForNodes("4").timeout(TimeValue.timeValueSeconds(5))).actionGet();
             Assert.assertFalse(res.isTimedOut());
             Assert.assertEquals(4, res.getNumberOfNodes());
