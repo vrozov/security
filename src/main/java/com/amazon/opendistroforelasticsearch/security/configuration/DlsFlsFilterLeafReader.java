@@ -86,7 +86,6 @@ import com.amazon.opendistroforelasticsearch.security.support.MapUtils;
 import com.amazon.opendistroforelasticsearch.security.support.OpenDistroSecurityUtils;
 import com.amazon.opendistroforelasticsearch.security.support.WildcardMatcher;
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
 class DlsFlsFilterLeafReader extends FilterLeafReader {
@@ -106,7 +105,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private final ClusterService clusterService;
     private final AuditLog auditlog;
     private final Map<String, MaskedField> maskedFieldsMap;
-    private final Set<WildcardMatcher> maskedFieldsKeyPatterns;
+    private final WildcardMatcher maskedFieldsMatcher;
     private final ShardId shardId;
     private final boolean maskFields;
 
@@ -125,15 +124,9 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         this.threadContext = threadContext;
         this.clusterService = clusterService;
         this.auditlog = auditlog;
-        this.maskedFieldsMap = maskFields?extractMaskedFields(maskedFields):null;
+        this.maskedFieldsMap = maskFields ? extractMaskedFields(maskedFields) : Collections.emptyMap();
 
-        if(maskedFieldsMap != null) {
-            maskedFieldsKeyPatterns = maskedFieldsMap.keySet().stream()
-                    .map(WildcardMatcher::pattern)
-                    .collect(Collectors.toSet());
-        } else {
-            maskedFieldsKeyPatterns = Collections.emptySet();
-        }
+        maskedFieldsMatcher = WildcardMatcher.from(maskedFieldsMap.keySet());
 
         this.shardId = shardId;
         flsEnabled = includesExcludes != null && !includesExcludes.isEmpty();
@@ -178,9 +171,9 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 }
             } else {
                 if (!excludesSet.isEmpty()) {
-                    WildcardMatcher pattern = WildcardMatcher.pattern(excludesSet);
+                    WildcardMatcher matcher = WildcardMatcher.from(excludesSet);
                     for (final FieldInfo info : infos) {
-                        if (!pattern.test(info.name)) {
+                        if (!matcher.test(info.name)) {
                             fa[i++] = info;
                         }
                     }
@@ -188,9 +181,9 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                     this.excludes = excludesSet.toArray(EMPTY_STRING_ARRAY);
 
                 } else {
-                    WildcardMatcher pattern = WildcardMatcher.pattern(includesSet);
+                    WildcardMatcher matcher = WildcardMatcher.from(includesSet);
                     for (final FieldInfo info : infos) {
-                        if (pattern.test(info.name)) {
+                        if (matcher.test(info.name)) {
                             fa[i++] = info;
                         }
                     }
@@ -417,7 +410,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         private final StoredFieldVisitor delegate;
         private FieldReadCallback fieldReadCallback =
-                new FieldReadCallback(threadContext, indexService, clusterService, auditlog, maskedFieldsKeyPatterns, shardId);
+                new FieldReadCallback(threadContext, indexService, clusterService, auditlog, maskedFieldsMatcher, shardId);
 
         public ComplianceAwareStoredFieldVisitor(final StoredFieldVisitor delegate) {
             super();
@@ -603,10 +596,10 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         @Override
         public void stringField(final FieldInfo fieldInfo, final byte[] value) throws IOException {
-            final Optional<WildcardMatcher> matchedPattern = WildcardMatcher.getFirstMatchingPattern(maskedFieldsKeyPatterns, fieldInfo.name);
+            final Optional<WildcardMatcher> matcher = maskedFieldsMatcher.findFirst(fieldInfo.name);
 
-            if(matchedPattern.isPresent()) {
-                delegate.stringField(fieldInfo, maskedFieldsMap.get(matchedPattern.get().toString()).mask(value));
+            if(matcher.isPresent()) {
+                delegate.stringField(fieldInfo, maskedFieldsMap.get(matcher.get().toString()).mask(value));
             } else {
                 delegate.stringField(fieldInfo, value);
             }
@@ -653,8 +646,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
             if (v instanceof List) {
                 final String field = stack.isEmpty() ? key : Joiner.on('.').join(stack) + "." + key;
-                final Optional<WildcardMatcher> matchedPattern = WildcardMatcher.getFirstMatchingPattern(
-                        maskedFieldsKeyPatterns, field);
+                final Optional<WildcardMatcher> matchedPattern = maskedFieldsMatcher.findFirst(field);
                 if (matchedPattern.isPresent()) {
                     final List listField = (List) v;
                     for (ListIterator iterator = listField.listIterator(); iterator.hasNext();) {
@@ -672,8 +664,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
             if (v != null && (v instanceof String || v instanceof byte[])) {
 
                 final String field = stack.isEmpty() ? key : Joiner.on('.').join(stack) + "." + key;
-                final Optional<WildcardMatcher> matchedPattern = WildcardMatcher.getFirstMatchingPattern(maskedFieldsKeyPatterns,
-                        field);
+                final Optional<WildcardMatcher> matchedPattern = maskedFieldsMatcher.findFirst(field);
                 if (matchedPattern.isPresent()) {
                     if (v instanceof String) {
                         map.replace(key, maskedFieldsMap.get(matchedPattern.get().toString()).mask(((String) v)));
@@ -736,8 +727,8 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         final String matchedPattern;
 
         if (binaryDocValues != null && ((rtMask=getRuntimeMaskedFieldInfo()) != null)) {
-            final List<WildcardMatcher> patterns = rtMask.keySet().stream().map(WildcardMatcher::pattern).collect(Collectors.toList());
-            matchedPattern = WildcardMatcher.getFirstMatchingPattern(patterns, handleKeyword(field))
+            final WildcardMatcher matcher = WildcardMatcher.from(rtMask.keySet());
+            matchedPattern = matcher.findFirst(handleKeyword(field))
                     .map(Object::toString).orElse(null);
             if (matchedPattern != null) {
                 final MaskedField mf = rtMask.get(matchedPattern);
@@ -797,10 +788,8 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         final Map<String, MaskedField> rtMask;
 
         if (sortedDocValues != null && (rtMask=getRuntimeMaskedFieldInfo())!=null) {
-            List<WildcardMatcher> patterns = rtMask.keySet().stream()
-                    .map(WildcardMatcher::pattern)
-                    .collect(Collectors.toList());
-            final String matchedPattern = WildcardMatcher.getFirstMatchingPattern(patterns, handleKeyword(field)).
+            WildcardMatcher matcher = WildcardMatcher.from(rtMask.keySet());
+            final String matchedPattern = matcher.findFirst(handleKeyword(field)).
                     map(Object::toString).orElse(null);
             if (matchedPattern != null) {
                 final MaskedField mf = rtMask.get(matchedPattern);
@@ -896,10 +885,8 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
 
         if (sortedSetDocValues != null && ((rtMask = getRuntimeMaskedFieldInfo()) !=null)) {
-            List<WildcardMatcher> patterns = rtMask.keySet().stream()
-                    .map(WildcardMatcher::pattern)
-                    .collect(Collectors.toList());
-            final String matchedPattern = WildcardMatcher.getFirstMatchingPattern(patterns, handleKeyword(field)).
+            WildcardMatcher matcher = WildcardMatcher.from(rtMask.keySet());
+            final String matchedPattern = matcher.findFirst(handleKeyword(field)).
                     map(Object::toString).orElse(null);
             if (matchedPattern != null) {
                 final MaskedField mf = rtMask.get(matchedPattern);
@@ -993,8 +980,8 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         Map<String, MaskedField> rtMask = getRuntimeMaskedFieldInfo();
         if(rtMask != null) {
-            WildcardMatcher patterns = WildcardMatcher.pattern(rtMask.keySet());
-            if (patterns.test(handleKeyword(field))) {
+            WildcardMatcher matcher = WildcardMatcher.from(rtMask.keySet());
+            if (matcher.test(handleKeyword(field))) {
                 return null;
             }
         }
@@ -1118,10 +1105,10 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         final Map<WildcardMatcher, Set<String>> maskedFieldsMap = (Map<WildcardMatcher, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
                 ConfigConstants.OPENDISTRO_SECURITY_MASKED_FIELD_HEADER);
-        final WildcardMatcher maskedEval = OpenDistroSecurityUtils.evalMap(maskedFieldsMap, indexService.index().getName());
+        final WildcardMatcher matcher = OpenDistroSecurityUtils.evalMap(maskedFieldsMap, indexService.index().getName());
 
-        if(maskedEval != null) {
-            final Set<String> mf = maskedFieldsMap.get(maskedEval);
+        if(matcher != null) {
+            final Set<String> mf = maskedFieldsMap.get(matcher);
             if(mf != null && !mf.isEmpty()) {
                 return extractMaskedFields(mf);
             }

@@ -63,13 +63,13 @@ public final class FieldReadCallback {
 
     public FieldReadCallback(final ThreadContext threadContext, final IndexService indexService,
             final ClusterService clusterService, final AuditLog auditLog,
-            final Set<WildcardMatcher> maskedFields, ShardId shardId) {
+            final WildcardMatcher maskedFields, ShardId shardId) {
         super();
         //this.threadContext = Objects.requireNonNull(threadContext);
         //this.clusterService = Objects.requireNonNull(clusterService);
         this.index = Objects.requireNonNull(indexService).index();
         this.auditLog = auditLog;
-        this.maskedFields = WildcardMatcher.merge(maskedFields);
+        this.maskedFields = maskedFields;
         this.shardId = shardId;
         try {
             sfc = (SourceFieldsContext) HeaderHelper.deserializeSafeFromHeader(threadContext, "_opendistro_security_source_field_context");

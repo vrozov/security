@@ -105,8 +105,8 @@ public class ComplianceConfig {
         this.logReadMetadataOnly = logReadMetadataOnly;
         this.logWriteMetadataOnly = logWriteMetadataOnly;
         this.logDiffsForWrite = logDiffsForWrite;
-        this.watchedWriteIndicesPatterns = WildcardMatcher.pattern(watchedWriteIndicesPatterns);
-        this.immutableIndicesPatterns = WildcardMatcher.pattern(immutableIndicesPatterns);
+        this.watchedWriteIndicesPatterns = WildcardMatcher.from(watchedWriteIndicesPatterns);
+        this.immutableIndicesPatterns = WildcardMatcher.from(immutableIndicesPatterns);
         this.opendistrosecurityIndex = opendistrosecurityIndex;
 
         this.salt16 = new byte[SALT_SIZE];
@@ -129,7 +129,7 @@ public class ComplianceConfig {
                 .map(watchedReadField -> watchedReadField.split(","))
                 .filter(split -> split.length != 0 && !Strings.isNullOrEmpty(split[0]))
                 .collect(Collectors.toMap(
-                        split -> WildcardMatcher.pattern(split[0]),
+                        split -> WildcardMatcher.from(split[0]),
                         split -> split.length == 1 ?
                                 Collections.singleton("*") : Arrays.stream(split).skip(1).collect(Collectors.toSet())
                 ));
@@ -154,7 +154,7 @@ public class ComplianceConfig {
                 .build(new CacheLoader<String, WildcardMatcher>() {
                     @Override
                     public WildcardMatcher load(String index) throws Exception {
-                        return WildcardMatcher.pattern(getFieldsForIndex(index));
+                        return WildcardMatcher.from(getFieldsForIndex(index));
                     }
                 });
     }
@@ -380,7 +380,7 @@ public class ComplianceConfig {
             matcher = readEnabledFieldsCache.get(index);
         } catch (ExecutionException e) {
             log.warn("Failed to get index {} fields enabled for read from cache. Bypassing cache.", index, e);
-            matcher = WildcardMatcher.pattern(getFieldsForIndex(index));
+            matcher = WildcardMatcher.from(getFieldsForIndex(index));
         }
         return matcher.test(field);
     }
