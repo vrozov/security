@@ -158,7 +158,9 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
     };
 
     public static WildcardMatcher from(String pattern, boolean caseSensitive) {
-        if (pattern.startsWith("/") && pattern.endsWith("/")) {
+        if (pattern.equals("*")) {
+            return ANY;
+        } else if (pattern.startsWith("/") && pattern.endsWith("/")) {
             return new RegexMatcher(pattern, caseSensitive);
         } else if (pattern.indexOf('?') >= 0 || pattern.indexOf('*') >= 0) {
             return caseSensitive ?  new SimpleMatcher(pattern) : new CasefoldingMatcher(pattern,  SimpleMatcher::new);
@@ -175,7 +177,13 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
     // This may in future use more optimized techniques to combine multiple WildcardMatchers in a single automaton
     public static WildcardMatcher from(Stream<String> patterns, boolean caseSensitive) {
         Collection<WildcardMatcher> matchers = patterns.map(p -> WildcardMatcher.from(p, caseSensitive)).collect(Collectors.toList());
-        return matchers.isEmpty() ? NONE : new MatcherCombiner(matchers);
+        if (matchers.isEmpty()) {
+            return NONE;
+        } else if (matchers.size() == 1) {
+            return matchers.iterator().next();
+        } else {
+            return new MatcherCombiner(matchers);
+        }
     }
 
     public static WildcardMatcher from(Collection<String> patterns, boolean caseSensitive) {
@@ -457,6 +465,7 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
         private final Collection<WildcardMatcher> wildcardMatchers;
 
         MatcherCombiner(Collection<WildcardMatcher> wildcardMatchers) {
+            Preconditions.checkArgument(wildcardMatchers.size() > 1);
             this.wildcardMatchers = wildcardMatchers;
         }
 

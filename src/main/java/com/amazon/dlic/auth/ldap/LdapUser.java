@@ -60,8 +60,8 @@ public class LdapUser extends User {
         return originalUsername;
     }
     
-    public static Map<String, String> extractLdapAttributes(String originalUsername, final LdapEntry userEntry
-            , int customAttrMaxValueLen, WildcardMatcher whiteListedAttributes) {
+    public static Map<String, String> extractLdapAttributes(String originalUsername, final LdapEntry userEntry,
+            int customAttrMaxValueLen, WildcardMatcher whiteListedAttributes) {
         Map<String, String> attributes = new HashMap<>();
         attributes.put("ldap.original.username", originalUsername);
         attributes.put("ldap.dn", userEntry.getDn());

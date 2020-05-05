@@ -80,7 +80,7 @@ public class LDAPAuthenticationBackend2 implements AuthenticationBackend, Destro
         this.userSearcher = new LDAPUserSearcher(settings);
         customAttrMaxValueLen = settings.getAsInt(ConfigConstants.LDAP_CUSTOM_ATTR_MAXVAL_LEN, 36);
         whitelistedAttributesMatcher = WildcardMatcher.from(settings.getAsList(ConfigConstants.LDAP_CUSTOM_ATTR_WHITELIST,
-                Collections.emptyList()));
+                Collections.singletonList("*")));
     }
 
     @Override
