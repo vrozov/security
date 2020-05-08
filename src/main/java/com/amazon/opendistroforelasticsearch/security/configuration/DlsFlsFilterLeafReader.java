@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
@@ -884,17 +883,16 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         final Map<String, MaskedField> rtMask;
 
 
-        if (sortedSetDocValues != null && ((rtMask = getRuntimeMaskedFieldInfo()) !=null)) {
-            WildcardMatcher matcher = WildcardMatcher.from(rtMask.keySet());
-            final String matchedPattern = matcher.findFirst(handleKeyword(field)).
-                    map(Object::toString).orElse(null);
-            if (matchedPattern != null) {
-                final MaskedField mf = rtMask.get(matchedPattern);
+        if (sortedSetDocValues != null && ((rtMask = getRuntimeMaskedFieldInfo()) != null)) {
+            String candidate = handleKeyword(field);
+            MaskedField mf = rtMask.entrySet().stream()
+                .filter(entry -> WildcardMatcher.from(entry.getKey()).test(candidate))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
 
-                if (mf == null) {
-                    return sortedSetDocValues;
-                }
 
+            if (mf != null) {
                 return new SortedSetDocValues() {
 
                     @Override
