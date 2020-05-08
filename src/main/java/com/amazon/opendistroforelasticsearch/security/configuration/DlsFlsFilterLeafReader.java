@@ -1103,12 +1103,12 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
             return null;
         }
 
-        final Map<WildcardMatcher, Set<String>> maskedFieldsMap = (Map<WildcardMatcher, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
+        final Map<String, Set<String>> maskedFieldsMap = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
                 ConfigConstants.OPENDISTRO_SECURITY_MASKED_FIELD_HEADER);
-        final WildcardMatcher matcher = OpenDistroSecurityUtils.evalMap(maskedFieldsMap, indexService.index().getName());
+        final String maskedEval = OpenDistroSecurityUtils.evalMap(maskedFieldsMap, indexService.index().getName());
 
-        if(matcher != null) {
-            final Set<String> mf = maskedFieldsMap.get(matcher);
+        if(maskedEval != null) {
+            final Set<String> mf = maskedFieldsMap.get(maskedEval);
             if(mf != null && !mf.isEmpty()) {
                 return extractMaskedFields(mf);
             }

@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -76,8 +75,8 @@ public class ComplianceConfig {
     private final boolean logReadMetadataOnly;
     private final boolean logWriteMetadataOnly;
     private final boolean logDiffsForWrite;
-    private final WildcardMatcher watchedWriteIndicesPatterns;
-    private final WildcardMatcher immutableIndicesPatterns;
+    private final WildcardMatcher watchedWriteIndicesMatcher;
+    private final WildcardMatcher immutableIndicesMatcher;
     private final String opendistrosecurityIndex;
 
     private final Map<WildcardMatcher, Set<String>> readEnabledFields;
@@ -105,8 +104,8 @@ public class ComplianceConfig {
         this.logReadMetadataOnly = logReadMetadataOnly;
         this.logWriteMetadataOnly = logWriteMetadataOnly;
         this.logDiffsForWrite = logDiffsForWrite;
-        this.watchedWriteIndicesPatterns = WildcardMatcher.from(watchedWriteIndicesPatterns);
-        this.immutableIndicesPatterns = WildcardMatcher.from(immutableIndicesPatterns);
+        this.watchedWriteIndicesMatcher = WildcardMatcher.from(watchedWriteIndicesPatterns);
+        this.immutableIndicesMatcher = WildcardMatcher.from(immutableIndicesPatterns);
         this.opendistrosecurityIndex = opendistrosecurityIndex;
 
         this.salt16 = new byte[SALT_SIZE];
@@ -166,8 +165,8 @@ public class ComplianceConfig {
         logger.info("Auditing will watch {} for read requests.", readEnabledFields);
         logger.info("Auditing only metadata information for write request is {}.", logWriteMetadataOnly ? "enabled" : "disabled");
         logger.info("Auditing diffs for write requests is {}.", logDiffsForWrite ? "enabled" : "disabled");
-        logger.info("Auditing will watch {} for write requests.", watchedWriteIndicesPatterns);
-        logger.info("{} indices are made immutable.", immutableIndicesPatterns);
+        logger.info("Auditing will watch {} for write requests.", watchedWriteIndicesMatcher);
+        logger.info("{} indices are made immutable.", immutableIndicesMatcher);
         logger.info("{} is used as internal security index.", opendistrosecurityIndex);
         logger.info("Internal index used for posting audit logs is {}", auditLogIndex);
     }
@@ -260,8 +259,8 @@ public class ComplianceConfig {
      * Get set of immutable index pattern
      * @return set of index patterns
      */
-    public WildcardMatcher getImmutableIndicesPatterns() {
-        return immutableIndicesPatterns;
+    public WildcardMatcher getImmutableIndicesMatcher() {
+        return immutableIndicesMatcher;
     }
 
     /**
@@ -336,7 +335,7 @@ public class ComplianceConfig {
             }
         }
 
-        return watchedWriteIndicesPatterns.test(index);
+        return watchedWriteIndicesMatcher.test(index);
     }
 
     /**

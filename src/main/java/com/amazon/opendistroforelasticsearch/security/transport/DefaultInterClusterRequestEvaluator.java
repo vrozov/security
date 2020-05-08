@@ -32,7 +32,6 @@ package com.amazon.opendistroforelasticsearch.security.transport;
 
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -77,12 +76,10 @@ public final class DefaultInterClusterRequestEvaluator implements InterClusterRe
     }
 
     private WildcardMatcher getNodesDnToEvaluate() {
-        List<WildcardMatcher> patterns = new ArrayList<>();
-        patterns.add(this.staticNodesDnFromEsYml);
         if (dynamicNodesDnConfigEnabled) {
-            patterns.addAll(dynamicNodesDn.values());
+            return staticNodesDnFromEsYml.concat(dynamicNodesDn.values());
         }
-        return WildcardMatcher.merge(patterns);
+        return staticNodesDnFromEsYml;
     }
 
     @Override

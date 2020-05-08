@@ -32,10 +32,11 @@ package com.amazon.opendistroforelasticsearch.security.privileges;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,6 +58,9 @@ import com.amazon.opendistroforelasticsearch.security.support.WildcardMatcher;
 import com.amazon.opendistroforelasticsearch.security.support.HeaderHelper;
 import com.amazon.opendistroforelasticsearch.security.user.User;
 
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableMap;
+
 public class DlsFlsEvaluator {
 
     protected final Logger log = LogManager.getLogger(this.getClass());
@@ -73,7 +77,7 @@ public class DlsFlsEvaluator {
         ThreadContext threadContext = threadPool.getThreadContext();
 
         // maskedFields
-        final Map<WildcardMatcher, Set<String>> maskedFieldsMap = securityRoles.getMaskedFields(user, resolver, clusterService);
+        final Map<String, Set<String>> maskedFieldsMap = securityRoles.getMaskedFields(user, resolver, clusterService);
 
 
         if (maskedFieldsMap != null && !maskedFieldsMap.isEmpty()) {
@@ -100,19 +104,19 @@ public class DlsFlsEvaluator {
                 }
             }
 
-            presponse.maskedFields = new HashMap<>(maskedFieldsMap);
+            Predicate<? super Entry<String, Set<String>>> predicate = requestedResolved.getAllIndices().isEmpty() ? Predicates.alwaysTrue() : entry -> !WildcardMatcher.from(entry.getKey()).matchAny(requestedResolved.getAllIndices());
+            presponse.maskedFields = maskedFieldsMap.entrySet().stream()
+                    .filter(predicate)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            if (!requestedResolved.getAllIndices().isEmpty()) {
-                presponse.maskedFields.entrySet().removeIf(entry -> !entry.getKey().matchAny(requestedResolved.getAllIndices()));
-            }
         }
 
 
 
         // attach dls/fls map if not already done
-        final Tuple<Map<WildcardMatcher, Set<String>>, Map<WildcardMatcher, Set<String>>> dlsFls = securityRoles.getDlsFls(user, resolver, clusterService);
-        final Map<WildcardMatcher, Set<String>> dlsQueries = dlsFls.v1();
-        final Map<WildcardMatcher, Set<String>> flsFields = dlsFls.v2();
+        final Tuple<Map<String, Set<String>>, Map<String, Set<String>>> dlsFls = securityRoles.getDlsFls(user, resolver, clusterService);
+        final Map<String, Set<String>> dlsQueries = dlsFls.v1();
+        final Map<String, Set<String>> flsFields = dlsFls.v2();
 
         if (!dlsQueries.isEmpty()) {
 
@@ -134,13 +138,10 @@ public class DlsFlsEvaluator {
                 }
             }
 
-            presponse.queries = new HashMap<>(dlsQueries);
-
-            if (!requestedResolved.getAllIndices().isEmpty()) {
-                presponse.queries.entrySet().removeIf(entry ->
-                        !entry.getKey().matchAny(requestedResolved.getAllIndices())
-                );
-            }
+            Predicate<? super Entry<String, Set<String>>> predicate = requestedResolved.getAllIndices().isEmpty() ? Predicates.alwaysTrue() : entry -> !WildcardMatcher.from(entry.getKey()).matchAny(requestedResolved.getAllIndices());
+            presponse.queries = dlsQueries.entrySet().stream()
+                    .filter(predicate)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         }
 
@@ -168,13 +169,11 @@ public class DlsFlsEvaluator {
                 }
             }
 
-            presponse.allowedFlsFields = new HashMap<>(flsFields);
+            Predicate<Map.Entry<String, Set<String>>> predicate = requestedResolved.getAllIndices().isEmpty() ? Predicates.alwaysTrue() : entry -> !WildcardMatcher.from(entry.getKey()).matchAny(requestedResolved.getAllIndices());
+            presponse.allowedFlsFields = flsFields.entrySet().stream()
+                    .filter(predicate)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            if (!requestedResolved.getAllIndices().isEmpty()) {
-                presponse.allowedFlsFields.entrySet().removeIf(entry ->
-                        !entry.getKey().matchAny(requestedResolved.getAllIndices())
-                );
-            }
         }
 
 

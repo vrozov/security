@@ -37,7 +37,7 @@ import com.amazon.opendistroforelasticsearch.security.privileges.PrivilegesEvalu
 import com.amazon.opendistroforelasticsearch.security.support.ConfigConstants;
 import com.amazon.opendistroforelasticsearch.security.support.HeaderHelper;
 import com.amazon.opendistroforelasticsearch.security.support.OpenDistroSecurityUtils;
-import com.amazon.opendistroforelasticsearch.security.support.WildcardMatcher;
+
 import com.google.common.collect.Sets;
 
 public class OpenDistroSecurityFlsDlsIndexSearcherWrapper extends OpenDistroSecurityIndexSearcherWrapper {
@@ -77,26 +77,26 @@ public class OpenDistroSecurityFlsDlsIndexSearcherWrapper extends OpenDistroSecu
 
         if(!isAdmin) {
 
-            final Map<WildcardMatcher, Set<String>> allowedFlsFields = (Map<WildcardMatcher, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
+            final Map<String, Set<String>> allowedFlsFields = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
                     ConfigConstants.OPENDISTRO_SECURITY_FLS_FIELDS_HEADER);
-            final Map<WildcardMatcher, Set<String>> queries = (Map<WildcardMatcher, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
+            final Map<String, Set<String>> queries = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
                     ConfigConstants.OPENDISTRO_SECURITY_DLS_QUERY_HEADER);
-            final Map<WildcardMatcher, Set<String>> maskedFieldsMap = (Map<WildcardMatcher, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
+            final Map<String, Set<String>> maskedFieldsMap = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
                     ConfigConstants.OPENDISTRO_SECURITY_MASKED_FIELD_HEADER);
 
-            final WildcardMatcher flsMatcher = OpenDistroSecurityUtils.evalMap(allowedFlsFields, index.getName());
-            final WildcardMatcher dlsMatcher = OpenDistroSecurityUtils.evalMap(queries, index.getName());
-            final WildcardMatcher maskedMatcher = OpenDistroSecurityUtils.evalMap(maskedFieldsMap, index.getName());
+            final String flsEval = OpenDistroSecurityUtils.evalMap(allowedFlsFields, index.getName());
+            final String dlsEval = OpenDistroSecurityUtils.evalMap(queries, index.getName());
+            final String maskedEval = OpenDistroSecurityUtils.evalMap(maskedFieldsMap, index.getName());
 
-            if (flsMatcher != null) {
+            if (flsEval != null) {
                 flsFields = new HashSet<>(metaFields);
-                flsFields.addAll(allowedFlsFields.get(flsMatcher));
+                flsFields.addAll(allowedFlsFields.get(flsEval));
             }
 
 
 
-            if (dlsMatcher != null) {
-                final Set<String> unparsedDlsQueries = queries.get(dlsMatcher);
+            if (dlsEval != null) {
+                final Set<String> unparsedDlsQueries = queries.get(dlsEval);
                 if(unparsedDlsQueries != null && !unparsedDlsQueries.isEmpty()) {
                     //disable reader optimizations
                     dlsQuery = DlsQueryParser.parse(unparsedDlsQueries, this.indexService.newQueryShardContext(shardId.getId(), null, nowInMillis, null)
@@ -104,9 +104,9 @@ public class OpenDistroSecurityFlsDlsIndexSearcherWrapper extends OpenDistroSecu
                 }
             }
 
-            if (maskedMatcher != null) {
+            if (maskedEval != null) {
                 maskedFields = new HashSet<>();
-                maskedFields.addAll(maskedFieldsMap.get(maskedMatcher));
+                maskedFields.addAll(maskedFieldsMap.get(maskedEval));
             }
         }
 

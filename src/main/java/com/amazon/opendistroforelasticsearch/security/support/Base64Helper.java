@@ -49,6 +49,7 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -85,8 +86,7 @@ public class Base64Helper {
         Number.class,
         Collection.class,
         Map.class,
-        Enum.class,
-        WildcardMatcher.class
+        Enum.class
     );
 
     private static final Set<String> SAFE_CLASS_NAMES = new HashSet<>(
@@ -104,9 +104,22 @@ public class Base64Helper {
 
     private final static class SafeObjectOutputStream extends ObjectOutputStream {
 
-        public SafeObjectOutputStream(OutputStream out) throws IOException {
+        static ObjectOutputStream create(OutputStream out) throws IOException {
+            try {
+                return new SafeObjectOutputStream(out);
+            } catch (SecurityException e) {
+                return new ObjectOutputStream(out);
+            }
+        }
+
+        private SafeObjectOutputStream(OutputStream out) throws IOException {
             super(out);
-            enableReplaceObject(true);
+            java.security.AccessController.doPrivileged(
+                (PrivilegedAction<Void>) () -> {
+                    enableReplaceObject(true);
+                    return null;
+                }
+            );
         }
 
         @Override
@@ -127,12 +140,12 @@ public class Base64Helper {
 
         try {
             final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            final ObjectOutputStream out = new SafeObjectOutputStream(bos);
+            final ObjectOutputStream out = SafeObjectOutputStream.create(bos);
             out.writeObject(object);
             final byte[] bytes = bos.toByteArray();
             return BaseEncoding.base64().encode(bytes);
         } catch (final Exception e) {
-            throw new ElasticsearchException("Fail to serialize %s", object, e);
+            throw new ElasticsearchException("Instance {} of class {} is not serializable", object, object.getClass(), e);
         }
     }
 

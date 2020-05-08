@@ -30,9 +30,9 @@
 
 package com.amazon.opendistroforelasticsearch.security.support;
 
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -47,11 +47,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
-public abstract class WildcardMatcher implements Predicate<String>, Serializable {
+public abstract class WildcardMatcher implements Predicate<String> {
     private static final long serialVersionUID = 7133340878814769890L;
 
-    // TODO: make serializable, hashable etc.
     public static final WildcardMatcher ANY = new WildcardMatcher() {
         private static final long serialVersionUID = 7933900657569940488L;
 
@@ -96,7 +96,13 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
         }
 
         @Override
-        public String toString() { return "*"; }
+        public String toString() {
+            return "*";
+        }
+
+        private Object readResolve() throws ObjectStreamException {
+            return ANY;
+        }
     };
 
     // TODO: make serializable, hashable etc.
@@ -154,7 +160,13 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
         }
 
         @Override
-        public String toString() { return "<NONE>"; }
+        public String toString() {
+            return "<NONE>";
+        }
+
+        private WildcardMatcher readResolve() throws ObjectStreamException {
+            return NONE;
+        }
     };
 
     public static WildcardMatcher from(String pattern, boolean caseSensitive) {
@@ -176,22 +188,31 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
 
     // This may in future use more optimized techniques to combine multiple WildcardMatchers in a single automaton
     public static WildcardMatcher from(Stream<String> patterns, boolean caseSensitive) {
-        Collection<WildcardMatcher> matchers = patterns.map(p -> WildcardMatcher.from(p, caseSensitive)).collect(Collectors.toList());
+        Collection<WildcardMatcher> matchers = patterns.map(p -> WildcardMatcher.from(p, caseSensitive)).collect(ImmutableSet.toImmutableSet());
         if (matchers.isEmpty()) {
             return NONE;
         } else if (matchers.size() == 1) {
             return matchers.iterator().next();
-        } else {
-            return new MatcherCombiner(matchers);
         }
+        return new MatcherCombiner(matchers);
     }
 
     public static WildcardMatcher from(Collection<String> patterns, boolean caseSensitive) {
-        return from(patterns == null ? Stream.empty() : patterns.stream(), caseSensitive);
+        if (patterns == null || patterns.isEmpty()) {
+            return NONE;
+        } else if (patterns.size() == 1) {
+            return from(patterns.iterator().next(), caseSensitive);
+        }
+        return from(patterns.stream(), caseSensitive);
     }
 
     public static WildcardMatcher from(String[] patterns, boolean caseSensitive) {
-        return from(patterns == null ? Stream.empty() : Arrays.stream(patterns), caseSensitive);
+        if (patterns == null || patterns.length == 0) {
+            return NONE;
+        } else if (patterns.length == 1) {
+            return from(patterns[0], caseSensitive);
+        }
+        return from(Arrays.stream(patterns), caseSensitive);
     }
 
     public static WildcardMatcher from(Stream<String> patterns) {
@@ -201,8 +222,26 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
         return from(patterns, true);
     }
 
-    public static WildcardMatcher from(String[] patterns) {
+    public static WildcardMatcher from(String... patterns) {
         return from(patterns, true);
+    }
+
+    public WildcardMatcher concat(Stream<WildcardMatcher> matchers) {
+        return new WildcardMatcher.MatcherCombiner(Stream.concat(matchers, Stream.of(this)).collect(ImmutableSet.toImmutableSet()));
+    }
+
+    public WildcardMatcher concat(Collection<WildcardMatcher> matchers) {
+        if (matchers.isEmpty()) {
+            return this;
+        }
+        return concat(matchers.stream());
+    }
+
+    public WildcardMatcher concat(WildcardMatcher... matchers) {
+        if (matchers.length == 0) {
+            return this;
+        }
+        return concat(Arrays.stream(matchers));
     }
 
     public boolean matchAny(Stream<String> candidates) {
@@ -242,16 +281,12 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
     }
 
     public Optional<WildcardMatcher> findFirst(final String candidate) {
-        return Optional.empty();
+        return Optional.ofNullable(test(candidate) ? this : null);
     }
 
     public static List<WildcardMatcher> matchers(Collection<String> patterns) {
         return patterns.stream().map(p -> WildcardMatcher.from(p, true))
                 .collect(Collectors.toList());
-    }
-
-    public static WildcardMatcher merge(Collection<WildcardMatcher> patterns) {
-        return new MatcherCombiner(new ArrayList<>(patterns));
     }
 
     public static boolean allMatches(final Collection<WildcardMatcher> matchers, final Collection<String> candidate) {
@@ -463,10 +498,12 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
         private static final long serialVersionUID = 7493891439965468040L;
 
         private final Collection<WildcardMatcher> wildcardMatchers;
+        private final int hashCode;
 
         MatcherCombiner(Collection<WildcardMatcher> wildcardMatchers) {
             Preconditions.checkArgument(wildcardMatchers.size() > 1);
             this.wildcardMatchers = wildcardMatchers;
+            hashCode = wildcardMatchers.hashCode();
         }
 
         @Override
@@ -489,7 +526,7 @@ public abstract class WildcardMatcher implements Predicate<String>, Serializable
 
         @Override
         public int hashCode() {
-            return wildcardMatchers.hashCode();
+            return hashCode;
         }
 
         @Override
