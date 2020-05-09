@@ -56,7 +56,7 @@ public class AdminDNs {
     protected final Logger log = LogManager.getLogger(AdminDNs.class);
     private final Set<LdapName> adminDn = new HashSet<LdapName>();
     private final Set<String> adminUsernames = new HashSet<String>();
-    private final Map<LdapName, WildcardMatcher> allowedImpersonations;
+    private final Map<LdapName, WildcardMatcher> allowedDnsImpersonations;
     private final Map<String, WildcardMatcher> allowedRestImpersonations;
     private boolean injectUserEnabled;
     private boolean injectAdminUserEnabled;
@@ -89,7 +89,7 @@ public class AdminDNs {
 
         final Settings impersonationDns = settings.getByPrefix(ConfigConstants.OPENDISTRO_SECURITY_AUTHCZ_IMPERSONATION_DN+".");
 
-        allowedImpersonations = impersonationDns.keySet().stream()
+        allowedDnsImpersonations = impersonationDns.keySet().stream()
             .map(this::toLdapName)
             .filter(Objects::nonNull)
             .collect(
@@ -99,7 +99,7 @@ public class AdminDNs {
                 )
             );
 
-        log.debug("Loaded {} impersonation DN's {}",allowedImpersonations.size(), allowedImpersonations);
+        log.debug("Loaded {} impersonation DN's {}", allowedDnsImpersonations.size(), allowedDnsImpersonations);
         
         final Settings impersonationUsersRest = settings.getByPrefix(ConfigConstants.OPENDISTRO_SECURITY_AUTHCZ_REST_IMPERSONATION_USERS+".");
 
@@ -161,11 +161,7 @@ public class AdminDNs {
     public boolean isTransportImpersonationAllowed(LdapName dn, String impersonated) {
         if(dn == null) return false;
         
-        if(isAdminDN(dn)) {
-            return true;
-        }
-
-        return allowedImpersonations.getOrDefault(dn, WildcardMatcher.NONE).test(impersonated);
+        return isAdminDN(dn) || allowedDnsImpersonations.getOrDefault(dn, WildcardMatcher.NONE).test(impersonated);
     }
     
     public boolean isRestImpersonationAllowed(final String originalUser, final String impersonated) {

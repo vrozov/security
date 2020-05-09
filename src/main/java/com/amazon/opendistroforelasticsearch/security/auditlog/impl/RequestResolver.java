@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -346,8 +347,7 @@ public final class RequestResolver {
         final String[] _indices = indices == null?new String[0]:indices;
         msg.addIndices(_indices);
 
-        final WildcardMatcher allIndicesMatcher;
-        final HashSet<String> allIndices;
+        final Set<String> allIndices;
 
         if(resolveIndices) {
             final String[] resolvedIndices = (resolver==null)?new String[0]:resolver.concreteIndexNames(cs.state(), IndicesOptions.lenientExpandOpen(), indices);
@@ -366,7 +366,7 @@ public final class RequestResolver {
             }
         }
 
-        allIndicesMatcher = WildcardMatcher.from(allIndices);
+        final WildcardMatcher allIndicesMatcher = WildcardMatcher.from(allIndices);
         if(addSource) {
             if(sourceIsSensitive && source != null) {
                 if(!allIndicesMatcher.test(opendistrosecurityIndex)) {

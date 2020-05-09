@@ -30,8 +30,6 @@
 
 package com.amazon.opendistroforelasticsearch.security.support;
 
-import java.io.ObjectStreamException;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -50,10 +48,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 public abstract class WildcardMatcher implements Predicate<String> {
-    private static final long serialVersionUID = 7133340878814769890L;
 
     public static final WildcardMatcher ANY = new WildcardMatcher() {
-        private static final long serialVersionUID = 7933900657569940488L;
 
         @Override
         public boolean matchAny(Stream<String> candidates) {
@@ -99,15 +95,9 @@ public abstract class WildcardMatcher implements Predicate<String> {
         public String toString() {
             return "*";
         }
-
-        private Object readResolve() throws ObjectStreamException {
-            return ANY;
-        }
     };
 
-    // TODO: make serializable, hashable etc.
     public static final WildcardMatcher NONE = new WildcardMatcher() {
-        private static final long serialVersionUID = -7034434965452534578L;
 
         @Override
         public boolean matchAny(Stream<String> candidates) {
@@ -163,10 +153,6 @@ public abstract class WildcardMatcher implements Predicate<String> {
         public String toString() {
             return "<NONE>";
         }
-
-        private WildcardMatcher readResolve() throws ObjectStreamException {
-            return NONE;
-        }
     };
 
     public static WildcardMatcher from(String pattern, boolean caseSensitive) {
@@ -188,11 +174,12 @@ public abstract class WildcardMatcher implements Predicate<String> {
 
     // This may in future use more optimized techniques to combine multiple WildcardMatchers in a single automaton
     public static WildcardMatcher from(Stream<String> patterns, boolean caseSensitive) {
-        Collection<WildcardMatcher> matchers = patterns.map(p -> WildcardMatcher.from(p, caseSensitive)).collect(ImmutableSet.toImmutableSet());
+        Collection<WildcardMatcher> matchers = patterns.map(p -> WildcardMatcher.from(p, caseSensitive))
+            .collect(ImmutableSet.toImmutableSet());
         if (matchers.isEmpty()) {
             return NONE;
         } else if (matchers.size() == 1) {
-            return matchers.iterator().next();
+            return matchers.stream().findFirst().get();
         }
         return new MatcherCombiner(matchers);
     }
@@ -337,7 +324,6 @@ public abstract class WildcardMatcher implements Predicate<String> {
     // Casefolding matcher - sits on top of case-sensitive matcher 
     // and proxies toLower() of input string to the wrapped matcher
     private static final class CasefoldingMatcher extends WildcardMatcher {
-        static final long serialVersionUID = -5651976925009922927L;
 
         private final WildcardMatcher inner;
 
@@ -370,7 +356,6 @@ public abstract class WildcardMatcher implements Predicate<String> {
     }
 
     public static final class Exact extends WildcardMatcher {
-        private static final long serialVersionUID = -1065006818437830497L;
 
         private final String pattern;
 
@@ -405,7 +390,6 @@ public abstract class WildcardMatcher implements Predicate<String> {
     // RegexMatcher uses JDK Pattern to test for matching,
     // assumes "/<regex>/" strings as input pattern
     private static final class RegexMatcher extends WildcardMatcher {
-        private static final long serialVersionUID = 5655822039969887331L;
 
         private final Pattern pattern;
 
@@ -441,7 +425,6 @@ public abstract class WildcardMatcher implements Predicate<String> {
     // using exlicit stack or recursion (as long as we don't need sub-matches it does work)
     // allows us to save on resources and heap allocations unless Regex is required
     private static final class SimpleMatcher extends WildcardMatcher {
-        private static final long serialVersionUID = 5917562223849696115L;
 
         private final String pattern;
 
@@ -495,7 +478,6 @@ public abstract class WildcardMatcher implements Predicate<String> {
     // matches if any of the set do
     // Empty MultiMatcher always returns false
     private static final class MatcherCombiner extends WildcardMatcher {
-        private static final long serialVersionUID = 7493891439965468040L;
 
         private final Collection<WildcardMatcher> wildcardMatchers;
         private final int hashCode;

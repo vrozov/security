@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,6 +55,7 @@ import com.amazon.opendistroforelasticsearch.security.support.WildcardMatcher;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -127,10 +127,10 @@ public class ComplianceConfig {
         this.readEnabledFields = watchedReadFields.stream()
                 .map(watchedReadField -> watchedReadField.split(","))
                 .filter(split -> split.length != 0 && !Strings.isNullOrEmpty(split[0]))
-                .collect(Collectors.toMap(
+                .collect(ImmutableMap.toImmutableMap(
                         split -> WildcardMatcher.from(split[0]),
                         split -> split.length == 1 ?
-                                Collections.singleton("*") : Arrays.stream(split).skip(1).collect(Collectors.toSet())
+                                Collections.singleton("*") : Arrays.stream(split).skip(1).collect(ImmutableSet.toImmutableSet())
                 ));
 
         DateTimeFormatter auditLogPattern = null;
@@ -294,7 +294,7 @@ public class ComplianceConfig {
         return readEnabledFields.entrySet().stream()
                 .filter(entry -> entry.getKey().test(index))
                 .flatMap(entry -> entry.getValue().stream())
-                .collect(Collectors.toSet());
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     /**
