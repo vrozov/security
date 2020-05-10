@@ -173,9 +173,17 @@ public abstract class WildcardMatcher implements Predicate<String> {
     }
 
     // This may in future use more optimized techniques to combine multiple WildcardMatchers in a single automaton
-    public static WildcardMatcher from(Stream<String> patterns, boolean caseSensitive) {
-        Collection<WildcardMatcher> matchers = patterns.map(p -> WildcardMatcher.from(p, caseSensitive))
-            .collect(ImmutableSet.toImmutableSet());
+    public static <T> WildcardMatcher from(Stream<T> stream, boolean caseSensitive) {
+        Collection<WildcardMatcher> matchers = stream.map(t -> {
+            if (t instanceof String) {
+                return WildcardMatcher.from(((String) t), caseSensitive);
+            } else if (t instanceof WildcardMatcher) {
+                return ((WildcardMatcher) t);
+            }
+            throw new UnsupportedOperationException("WildcardMatcher can't be constructed from " + t.getClass().getSimpleName());
+        })
+        .collect(ImmutableSet.toImmutableSet());
+
         if (matchers.isEmpty()) {
             return NONE;
         } else if (matchers.size() == 1) {
@@ -184,13 +192,19 @@ public abstract class WildcardMatcher implements Predicate<String> {
         return new MatcherCombiner(matchers);
     }
 
-    public static WildcardMatcher from(Collection<String> patterns, boolean caseSensitive) {
-        if (patterns == null || patterns.isEmpty()) {
+    public static <T> WildcardMatcher from(Collection<T> collection, boolean caseSensitive) {
+        if (collection == null || collection.isEmpty()) {
             return NONE;
-        } else if (patterns.size() == 1) {
-            return from(patterns.iterator().next(), caseSensitive);
+        } else if (collection.size() == 1) {
+            T t = collection.stream().findFirst().get();
+            if (t instanceof String) {
+                return from(((String) t), caseSensitive);
+            } else if (t instanceof WildcardMatcher) {
+                return ((WildcardMatcher) t);
+            }
+            throw new UnsupportedOperationException("WildcardMatcher can't be constructed from " + t.getClass().getSimpleName());
         }
-        return from(patterns.stream(), caseSensitive);
+        return from(collection.stream(), caseSensitive);
     }
 
     public static WildcardMatcher from(String[] patterns, boolean caseSensitive) {
@@ -205,7 +219,8 @@ public abstract class WildcardMatcher implements Predicate<String> {
     public static WildcardMatcher from(Stream<String> patterns) {
         return from(patterns, true);
     }
-    public static WildcardMatcher from(Collection<String> patterns) {
+
+    public static WildcardMatcher from(Collection<?> patterns) {
         return from(patterns, true);
     }
 
