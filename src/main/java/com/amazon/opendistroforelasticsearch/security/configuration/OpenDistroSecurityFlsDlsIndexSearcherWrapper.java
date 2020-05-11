@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 
-
+import com.amazon.opendistroforelasticsearch.security.privileges.PrivilegesEvaluator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.cluster.service.ClusterService;

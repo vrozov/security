@@ -99,6 +99,7 @@ import com.amazon.opendistroforelasticsearch.security.securityconf.DynamicConfig
 import com.amazon.opendistroforelasticsearch.security.support.SnapshotRestoreHelper;
 import com.amazon.opendistroforelasticsearch.security.support.WildcardMatcher;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 public final class IndexResolverReplacer {

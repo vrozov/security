@@ -22,14 +22,14 @@ public class OpenDistroProtectedIndexAccessEvaluator {
 
     private final AuditLog auditLog;
     private final WildcardMatcher indexMatcher;
-    private final WildcardMatcher allowedRoles;
+    private final WildcardMatcher allowedRolesMatcher;
     private final Boolean protectedIndexEnabled;
     private final WildcardMatcher deniedActionMatcher;
 
 
     public OpenDistroProtectedIndexAccessEvaluator(final Settings settings, AuditLog auditLog) {
         this.indexMatcher = WildcardMatcher.from(settings.getAsList(ConfigConstants.OPENDISTRO_SECURITY_PROTECTED_INDICES_KEY, ConfigConstants.OPENDISTRO_SECURITY_PROTECTED_INDICES_DEFAULT));
-        this.allowedRoles = WildcardMatcher.from(settings.getAsList(ConfigConstants.OPENDISTRO_SECURITY_PROTECTED_INDICES_ROLES_KEY, ConfigConstants.OPENDISTRO_SECURITY_PROTECTED_INDICES_ROLES_DEFAULT));
+        this.allowedRolesMatcher = WildcardMatcher.from(settings.getAsList(ConfigConstants.OPENDISTRO_SECURITY_PROTECTED_INDICES_ROLES_KEY, ConfigConstants.OPENDISTRO_SECURITY_PROTECTED_INDICES_ROLES_DEFAULT));
         this.protectedIndexEnabled = settings.getAsBoolean(ConfigConstants.OPENDISTRO_SECURITY_PROTECTED_INDICES_ENABLED_KEY, ConfigConstants.OPENDISTRO_SECURITY_PROTECTED_INDICES_ENABLED_DEFAULT);
         this.auditLog = auditLog;
 
@@ -53,7 +53,7 @@ public class OpenDistroProtectedIndexAccessEvaluator {
         }
         if (indexMatcher.matchAny(requestedResolved.getAllIndices())
                 && deniedActionMatcher.test(action)
-                && !allowedRoles.matchAny(securityRoles.getRoleNames())) {
+                && !allowedRolesMatcher.matchAny(securityRoles.getRoleNames())) {
             auditLog.logMissingPrivileges(action, request, task);
             log.warn(action + " for '{}' index/indices is not allowed for a regular user", indexMatcher);
             presponse.allowed = false;
@@ -62,7 +62,7 @@ public class OpenDistroProtectedIndexAccessEvaluator {
 
         if (requestedResolved.isLocalAll()
                 && deniedActionMatcher.test(action)
-                && !allowedRoles.matchAny(securityRoles.getRoleNames())) {
+                && !allowedRolesMatcher.matchAny(securityRoles.getRoleNames())) {
             auditLog.logMissingPrivileges(action, request, task);
             log.warn(action + " for '_all' indices is not allowed for a regular user");
             presponse.allowed = false;
@@ -70,7 +70,7 @@ public class OpenDistroProtectedIndexAccessEvaluator {
         }
         if((indexMatcher.matchAny(requestedResolved.getAllIndices())
                 || requestedResolved.isLocalAll())
-                && !allowedRoles.matchAny(securityRoles.getRoleNames())) {
+                && !allowedRolesMatcher.matchAny(securityRoles.getRoleNames())) {
 
             if(request instanceof SearchRequest) {
                 ((SearchRequest)request).requestCache(Boolean.FALSE);
