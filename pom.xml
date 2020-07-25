@@ -109,6 +109,7 @@
 
     <dependencies>
 
+
         <!-- Netty 4 transport -->
         <dependency>
             <groupId>org.elasticsearch.plugin</groupId>
