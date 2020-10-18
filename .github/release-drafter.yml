@@ -1,4 +1,3 @@
-# Configuration for Release Drafter: https://github.com/toolmantim/release-drafter
 template: |
   Compatible with Elasticsearch (set version here).
   $CHANGES
