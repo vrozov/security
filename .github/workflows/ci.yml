@@ -36,6 +36,9 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
 
+    - name: Env
+      run: env
+
     - name: Checkstyle
       run: mvn -B checkstyle:checkstyle
 
